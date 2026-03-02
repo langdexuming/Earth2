@@ -26,6 +26,8 @@ public class SimpleRtsGameManager : MonoBehaviour
     private readonly List<Building> enemyBuildings = new List<Building>();
     private readonly List<Material> runtimeMaterials = new List<Material>();
     private readonly List<Texture2D> runtimeTextures = new List<Texture2D>();
+    private int externalVisualCount = 0;
+    private int fallbackVisualCount = 0;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void BootstrapOnSceneLoad()
@@ -258,6 +260,15 @@ public class SimpleRtsGameManager : MonoBehaviour
 
     private GameObject CreateBuildingBody(BuildingType type)
     {
+        if (ExternalVisualLibrary.TryInstantiateBuilding(type, out GameObject externalBuilding))
+        {
+            NormalizeExternalVisual(externalBuilding, GetBuildingVisualFootprint(type), GetBuildingHeight(type));
+            EnsureEntityCollider(externalBuilding);
+            externalVisualCount++;
+            return externalBuilding;
+        }
+
+        fallbackVisualCount++;
         GameObject root = new GameObject(type + "_Body");
 
         Color concrete = new Color(0.62f, 0.64f, 0.66f, 1f);
@@ -313,6 +324,15 @@ public class SimpleRtsGameManager : MonoBehaviour
 
     private GameObject CreateUnitBody(UnitType type)
     {
+        if (ExternalVisualLibrary.TryInstantiateUnit(type, out GameObject externalUnit))
+        {
+            NormalizeExternalVisual(externalUnit, GetUnitFootprint(type), GetUnitHeight(type));
+            EnsureEntityCollider(externalUnit);
+            externalVisualCount++;
+            return externalUnit;
+        }
+
+        fallbackVisualCount++;
         GameObject root;
 
         Color cloth = new Color(0.58f, 0.62f, 0.65f, 1f);
@@ -366,6 +386,119 @@ public class SimpleRtsGameManager : MonoBehaviour
         }
 
         return root;
+    }
+
+    private float GetBuildingVisualFootprint(BuildingType type)
+    {
+        switch (type)
+        {
+            case BuildingType.Headquarters:
+                return 7.8f;
+            case BuildingType.Barracks:
+                return 6.2f;
+            case BuildingType.Factory:
+                return 7.0f;
+            case BuildingType.Airfield:
+                return 9.2f;
+            default:
+                return 4.5f;
+        }
+    }
+
+    private float GetBuildingHeight(BuildingType type)
+    {
+        switch (type)
+        {
+            case BuildingType.Headquarters:
+                return 5.5f;
+            case BuildingType.Barracks:
+                return 4.0f;
+            case BuildingType.Factory:
+                return 4.6f;
+            case BuildingType.Airfield:
+                return 3.4f;
+            default:
+                return 3.5f;
+        }
+    }
+
+    private float GetUnitFootprint(UnitType type)
+    {
+        switch (type)
+        {
+            case UnitType.Infantry:
+                return 0.7f;
+            case UnitType.Tank:
+                return 3.0f;
+            case UnitType.Aircraft:
+                return 3.4f;
+            default:
+                return 1f;
+        }
+    }
+
+    private float GetUnitHeight(UnitType type)
+    {
+        switch (type)
+        {
+            case UnitType.Infantry:
+                return 1.7f;
+            case UnitType.Tank:
+                return 1.2f;
+            case UnitType.Aircraft:
+                return 1.3f;
+            default:
+                return 1.4f;
+        }
+    }
+
+    private void NormalizeExternalVisual(GameObject visualRoot, float targetFootprint, float targetHeight)
+    {
+        if (visualRoot == null)
+        {
+            return;
+        }
+
+        Bounds initialBounds = CalculateRendererBounds(visualRoot);
+        float currentFootprint = Mathf.Max(initialBounds.size.x, initialBounds.size.z, 0.001f);
+        float currentHeight = Mathf.Max(initialBounds.size.y, 0.001f);
+
+        float footprintScale = targetFootprint / currentFootprint;
+        float heightScale = targetHeight / currentHeight;
+        float scaleFactor = Mathf.Max(0.0001f, Mathf.Min(footprintScale, heightScale));
+
+        visualRoot.transform.localScale *= scaleFactor;
+
+        Bounds scaledBounds = CalculateRendererBounds(visualRoot);
+        Vector3 placementOffset = new Vector3(
+            -scaledBounds.center.x,
+            -scaledBounds.min.y,
+            -scaledBounds.center.z
+        );
+        visualRoot.transform.position += placementOffset;
+    }
+
+    private void EnsureEntityCollider(GameObject entityRoot)
+    {
+        if (entityRoot == null)
+        {
+            return;
+        }
+
+        if (entityRoot.GetComponentInChildren<Collider>() != null)
+        {
+            return;
+        }
+
+        Bounds bounds = CalculateRendererBounds(entityRoot);
+        BoxCollider collider = entityRoot.AddComponent<BoxCollider>();
+        collider.center = entityRoot.transform.InverseTransformPoint(bounds.center);
+
+        Vector3 localSize = entityRoot.transform.InverseTransformVector(bounds.size);
+        localSize.x = Mathf.Max(Mathf.Abs(localSize.x), 0.1f);
+        localSize.y = Mathf.Max(Mathf.Abs(localSize.y), 0.1f);
+        localSize.z = Mathf.Max(Mathf.Abs(localSize.z), 0.1f);
+        collider.size = localSize;
     }
 
     private GameObject AddPart(Transform parent, PrimitiveType primitive, Vector3 localPosition, Vector3 localScale, Color color)
@@ -701,22 +834,23 @@ public class SimpleRtsGameManager : MonoBehaviour
 
     private void OnGUI()
     {
-        GUI.Box(new Rect(10f, 10f, 560f, 200f), "Simple RTS Controls");
+        GUI.Box(new Rect(10f, 10f, 560f, 224f), "Simple RTS Controls");
         GUI.Label(new Rect(22f, 38f, 540f, 24f), "Camera: WASD / Arrows / screen-edge pan, Zoom: mouse wheel");
         GUI.Label(new Rect(22f, 58f, 540f, 24f), "Select: LMB click or drag, Command: RMB move/attack");
         GUI.Label(new Rect(22f, 78f, 540f, 24f), "Build: B Barracks | N Factory | M Airfield");
         GUI.Label(new Rect(22f, 98f, 540f, 24f), "Produce: select building then 1 Infantry | 2 Tank | 3 Aircraft");
         GUI.Label(new Rect(22f, 122f, 540f, 24f), "Resources: " + playerResources);
+        GUI.Label(new Rect(22f, 142f, 540f, 24f), "Visuals: external " + externalVisualCount + " | fallback " + fallbackVisualCount);
 
         if (SelectionManager.Instance != null)
         {
-            GUI.Label(new Rect(22f, 144f, 540f, 24f), "Selection: " + SelectionManager.Instance.GetSelectionSummary());
+            GUI.Label(new Rect(22f, 162f, 540f, 24f), "Selection: " + SelectionManager.Instance.GetSelectionSummary());
 
             Building selectedBuilding = SelectionManager.Instance.GetFirstSelectedBuilding(0);
             if (selectedBuilding != null)
             {
-                GUI.Label(new Rect(22f, 164f, 540f, 24f), selectedBuilding.buildingName + " queue: " + selectedBuilding.GetQueueText());
-                GUI.Label(new Rect(22f, 182f, 540f, 24f), "Progress: " + Mathf.RoundToInt(selectedBuilding.CurrentProgress01 * 100f) + "%");
+                GUI.Label(new Rect(22f, 180f, 540f, 24f), selectedBuilding.buildingName + " queue: " + selectedBuilding.GetQueueText());
+                GUI.Label(new Rect(22f, 198f, 540f, 24f), "Progress: " + Mathf.RoundToInt(selectedBuilding.CurrentProgress01 * 100f) + "%");
             }
         }
 

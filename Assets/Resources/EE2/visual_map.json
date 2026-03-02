@@ -1,0 +1,58 @@
+{
+  "buildings": [
+    {
+      "type": "Headquarters",
+      "prefabs": [
+        "bld_citycenter13",
+        "bld_citycenter13_a",
+        "Headquarters"
+      ]
+    },
+    {
+      "type": "Barracks",
+      "prefabs": [
+        "bld_barracks13",
+        "Barracks"
+      ]
+    },
+    {
+      "type": "Factory",
+      "prefabs": [
+        "bld_robotics_factory",
+        "Factory"
+      ]
+    },
+    {
+      "type": "Airfield",
+      "prefabs": [
+        "bld_airport13",
+        "Airfield"
+      ]
+    }
+  ],
+  "units": [
+    {
+      "type": "Infantry",
+      "prefabs": [
+        "lhi13_assaultrifleman_we",
+        "lhi13_assaultrifleman",
+        "Infantry"
+      ]
+    },
+    {
+      "type": "Tank",
+      "prefabs": [
+        "lhm13_mainbattletank",
+        "Tank"
+      ]
+    },
+    {
+      "type": "Aircraft",
+      "prefabs": [
+        "AF13_JetFighter",
+        "AF13_jetfighter",
+        "Aircraft"
+      ]
+    }
+  ]
+}

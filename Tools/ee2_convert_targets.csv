@@ -1,0 +1,9 @@
+Pattern,Notes
+bld_citycenter13,Headquarters
+bld_barracks13,Barracks
+bld_robotics_factory,Factory
+bld_airport13,Airfield
+lhi13_assaultrifleman_we,Infantry primary
+lhi13_assaultrifleman,Infantry fallback
+lhm13_mainbattletank,Tank
+AF13_JetFighter,Aircraft
