@@ -1,0 +1,13 @@
+Output extension has set output file type to:
+.fbx - Autodesk FBX
+Detected file type: COLLADA
+Processing COLLADA file.
+File loaded successfully, beginning conversion.
+Found 24 joints in the file.
+Generating final model.
+Performing RichPGeo::Optimize on 1236 verts and 412 triangles...
+Finished with 641 verts and 412 triangles in 0.00 seconds.
+Creating skeleton.
+Constructing mesh list.
+Exporting FBX version 7.7.0
+Wrote file to D:\UnityCode\Earth2\ExternalAssets\EE2_Converted\_probe_sample_guy2.fbx.
