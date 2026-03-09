@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class SimpleRtsGameManager : MonoBehaviour
@@ -17,7 +17,7 @@ public class SimpleRtsGameManager : MonoBehaviour
 
     public bool IsPlacingBuilding => pendingBuildingType.HasValue;
 
-    private BuildingType? pendingBuildingType;
+    public BuildingType? pendingBuildingType;
     private Camera mainCamera;
     private string statusMessage = string.Empty;
     private float statusMessageTimer = 0f;
@@ -75,11 +75,12 @@ public class SimpleRtsGameManager : MonoBehaviour
     private void Start()
     {
         EnsureSelectionManagerExists();
+        EnsureHudExists();
         PrepareScene();
         CreateMap();
         SpawnInitialBases();
         SpawnInitialUnits();
-        SetStatus("Simple RTS prototype initialized");
+        SetStatus("Empire RTS initialized - Build your army!");
     }
 
     private void Update()
@@ -106,6 +107,17 @@ public class SimpleRtsGameManager : MonoBehaviour
 
         GameObject selectionObject = new GameObject("SelectionManager");
         selectionObject.AddComponent<SelectionManager>();
+    }
+
+    private void EnsureHudExists()
+    {
+        if (RtsHud.Instance != null)
+        {
+            return;
+        }
+
+        GameObject hudObject = new GameObject("RTS_HUD");
+        hudObject.AddComponent<RtsHud>();
     }
 
     private void PrepareScene()
@@ -800,6 +812,35 @@ public class SimpleRtsGameManager : MonoBehaviour
         statusMessageTimer = duration;
     }
 
+    public string GetCurrentStatusMessage()
+    {
+        return statusMessage;
+    }
+
+    public BuildingType? GetPendingBuildingType()
+    {
+        return pendingBuildingType;
+    }
+
+    public void StartBuildMode(KeyCode buildKey)
+    {
+        switch (buildKey)
+        {
+            case KeyCode.B:
+                pendingBuildingType = BuildingType.Barracks;
+                SetStatus("Build mode: Barracks (LMB place, RMB or Esc cancel)");
+                break;
+            case KeyCode.N:
+                pendingBuildingType = BuildingType.Factory;
+                SetStatus("Build mode: Factory (LMB place, RMB or Esc cancel)");
+                break;
+            case KeyCode.M:
+                pendingBuildingType = BuildingType.Airfield;
+                SetStatus("Build mode: Airfield (LMB place, RMB or Esc cancel)");
+                break;
+        }
+    }
+
     private string GetBuildingDisplayName(BuildingType type)
     {
         switch (type)
@@ -832,36 +873,4 @@ public class SimpleRtsGameManager : MonoBehaviour
         }
     }
 
-    private void OnGUI()
-    {
-        GUI.Box(new Rect(10f, 10f, 560f, 224f), "Simple RTS Controls");
-        GUI.Label(new Rect(22f, 38f, 540f, 24f), "Camera: WASD / Arrows / screen-edge pan, Zoom: mouse wheel");
-        GUI.Label(new Rect(22f, 58f, 540f, 24f), "Select: LMB click or drag, Command: RMB move/attack");
-        GUI.Label(new Rect(22f, 78f, 540f, 24f), "Build: B Barracks | N Factory | M Airfield");
-        GUI.Label(new Rect(22f, 98f, 540f, 24f), "Produce: select building then 1 Infantry | 2 Tank | 3 Aircraft");
-        GUI.Label(new Rect(22f, 122f, 540f, 24f), "Resources: " + playerResources);
-        GUI.Label(new Rect(22f, 142f, 540f, 24f), "Visuals: external " + externalVisualCount + " | fallback " + fallbackVisualCount);
-
-        if (SelectionManager.Instance != null)
-        {
-            GUI.Label(new Rect(22f, 162f, 540f, 24f), "Selection: " + SelectionManager.Instance.GetSelectionSummary());
-
-            Building selectedBuilding = SelectionManager.Instance.GetFirstSelectedBuilding(0);
-            if (selectedBuilding != null)
-            {
-                GUI.Label(new Rect(22f, 180f, 540f, 24f), selectedBuilding.buildingName + " queue: " + selectedBuilding.GetQueueText());
-                GUI.Label(new Rect(22f, 198f, 540f, 24f), "Progress: " + Mathf.RoundToInt(selectedBuilding.CurrentProgress01 * 100f) + "%");
-            }
-        }
-
-        if (pendingBuildingType.HasValue)
-        {
-            GUI.Box(new Rect(10f, 220f, 560f, 34f), "Build mode: " + GetBuildingDisplayName(pendingBuildingType.Value) + " (LMB place, RMB cancel)");
-        }
-
-        if (!string.IsNullOrEmpty(statusMessage))
-        {
-            GUI.Box(new Rect(10f, Screen.height - 52f, 560f, 40f), statusMessage);
-        }
-    }
 }
